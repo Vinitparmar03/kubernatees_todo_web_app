@@ -1,0 +1,14 @@
+services:
+  frontend:
+    image: vinitparmar03/todo_frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: http://todo.local/api/v1
+
+  backend:
+    image: vinitparmar03/todo_backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
