@@ -295,6 +295,319 @@ todo.local
 ```
 ---
 
+
+# 📊 Monitoring & Observability
+
+This project integrates **Prometheus** and **Grafana** to monitor both the Kubernetes cluster and the Node.js application in real time.
+
+The monitoring stack provides visibility into application performance, infrastructure resources, and Kubernetes workloads through interactive Grafana dashboards.
+
+---
+
+# 🏗️ Monitoring Architecture
+
+```text
+                           +----------------------+
+                           |      Grafana         |
+                           |   Dashboards & UI    |
+                           +----------▲-----------+
+                                      │
+                               PromQL Queries
+                                      │
+                           +----------┴-----------+
+                           |     Prometheus       |
+                           |  Time-Series DB      |
+                           +----------▲-----------+
+                                      │
+                        Scrapes Metrics Every 15s
+                                      │
+         ┌────────────────────────────┼────────────────────────────┐
+         │                            │                            │
+         ▼                            ▼                            ▼
++-------------------+      +-------------------+      +-------------------------+
+|   Node Exporter   |      | Kube State Metrics|      | Node.js Application     |
+| Infrastructure    |      | Kubernetes Metrics|      | (/metrics endpoint)     |
++-------------------+      +-------------------+      +-------------------------+
+```
+
+---
+
+# 📦 Monitoring Components
+
+| Component | Purpose |
+|----------|---------|
+| Prometheus | Collects and stores metrics |
+| Grafana | Visualizes metrics through dashboards |
+| Prometheus Operator | Manages Prometheus resources |
+| Node Exporter | Collects infrastructure metrics |
+| Kube State Metrics | Exposes Kubernetes object metrics |
+| ServiceMonitor | Automatically configures Prometheus to scrape application metrics |
+| prom-client | Exposes custom metrics from the Node.js application |
+
+---
+
+# 📂 Monitoring Directory
+
+```text
+monitoring/
+│
+├── values.yaml
+└── servicemonitor.yaml
+```
+
+---
+
+# 🚀 Install Helm
+
+Helm is required to install the Prometheus Operator and Grafana.
+
+### Ubuntu
+
+```bash
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+```
+
+Verify installation
+
+```bash
+helm version
+```
+
+---
+
+# 📥 Add Prometheus Helm Repository
+
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+```
+
+Update Helm repositories
+
+```bash
+helm repo update
+```
+
+---
+
+# 📁 Create Monitoring Namespace
+
+```bash
+kubectl create namespace monitoring
+```
+
+Verify
+
+```bash
+kubectl get ns
+```
+
+---
+
+
+# 📦 Install kube-prometheus-stack
+
+```bash
+helm install monitoring prometheus-community/kube-prometheus-stack \
+  -n monitoring \
+  -f k8s/ingress/custom_kube_prometheus_stack.yml
+```
+
+---
+
+# 🔍 Verify Installation
+
+Check Helm Release
+
+```bash
+helm list -n monitoring
+```
+
+Check Pods
+
+```bash
+kubectl get pods -n monitoring
+```
+
+Check Services
+
+```bash
+kubectl get svc -n monitoring
+```
+
+Check Ingress
+
+```bash
+kubectl get ingress -n monitoring
+```
+
+---
+
+
+```bash
+kubectl apply -f k8s/monitoring/todo-backend-servicemonitor.yaml
+```
+
+Verify
+
+```bash
+kubectl get servicemonitor -n monitoring
+```
+
+Describe
+
+```bash
+kubectl describe servicemonitor todo-backend-monitor -n monitoring
+```
+
+---
+
+# 📊 Application Metrics
+
+The backend exposes Prometheus metrics through
+
+```text
+GET /metrics
+```
+
+The following custom metrics are available:
+
+| Metric | Description |
+|---------|-------------|
+| http_requests_total | Total HTTP requests received |
+| http_request_duration_seconds | Measures request latency using a Histogram |
+
+Prometheus automatically scrapes these metrics every **15 seconds** using the ServiceMonitor.
+
+---
+
+# 📈 Infrastructure Metrics
+
+Collected using **Node Exporter**
+
+- CPU Usage
+- Memory Usage
+- Disk Usage
+- Network Usage
+- Filesystem Usage
+
+---
+
+# ☸ Kubernetes Metrics
+
+Collected using **Kube State Metrics**
+
+- Pods
+- Deployments
+- ReplicaSets
+- Namespaces
+- Nodes
+- Running Containers
+
+---
+
+# 📉 Sample PromQL Queries
+
+## Total Requests
+
+```promql
+http_requests_total
+```
+
+---
+
+## Request Rate
+
+```promql
+rate(http_requests_total[5m])
+```
+
+---
+
+## Average Request Duration
+
+```promql
+rate(http_request_duration_seconds_sum[5m])
+/
+rate(http_request_duration_seconds_count[5m])
+```
+
+---
+
+## CPU Usage
+
+```promql
+100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+```
+
+
+---
+
+## Running Pods
+
+```promql
+kube_pod_status_phase{phase="Running"}
+```
+
+---
+
+# 🌐 Access Prometheus
+
+```
+http://prometheus.local
+```
+
+Navigate to
+
+```
+Status → Targets
+```
+
+Verify that
+
+```
+todo-backend
+```
+
+shows
+
+```
+UP
+```
+
+---
+
+# 📊 Access Grafana
+
+```
+http://grafana.local
+```
+
+Default Credentials
+
+```text
+Username : admin
+Password : admin
+```
+
+---
+
+# 📈 Grafana Dashboards
+
+This project visualizes the following metrics using Grafana dashboards:
+
+- HTTP Request Count
+- HTTP Request Duration
+- CPU Usage
+- Memory Usage
+- Disk Usage
+- Network Usage
+- Kubernetes Pod Metrics
+- Deployment Metrics
+- Infrastructure Monitoring
+
+---
+
+
 # 🎥 Project video
 
 About this project on LinkedIn:
@@ -308,33 +621,29 @@ https://www.linkedin.com/posts/vinit-kumar-parmar-22522a215_kubernetes-docker-de
 
 # 📚 What I Learned
 
-Through this project, I learned:
+Through this project, I gained hands-on experience with deploying, managing, and monitoring cloud-native applications on Kubernetes. Key concepts I learned include:
 
-* Docker Containerization
-* Kubernetes Deployments
-* Kubernetes Services
-* ConfigMaps
-* Persistent Volumes
-* Persistent Volume Claims
-* Ingress
-* Health Probes
-* Scaling Applications
-* Stateful Applications
-* Kubernetes Networking
-* Production-ready Deployment Concepts
-
----
-
-# 🚀 Future Improvements
-
-* Kubernetes Secrets
-* Helm Charts
-* Horizontal Pod Autoscaler (HPA)
-* Prometheus Monitoring
-* Grafana Dashboards
-* GitHub Actions CI/CD
-* ArgoCD GitOps
-* Deployment on AWS EKS / Google GKE / Azure AKS
+* Docker containerization and image management
+* Deploying multi-tier applications on Kubernetes
+* Managing Kubernetes Deployments and Services
+* Configuring applications using ConfigMaps
+* Implementing Persistent Volumes (PV) and Persistent Volume Claims (PVC) for data persistence
+* Configuring Ingress for external access and request routing
+* Implementing Liveness and Readiness Probes for application health monitoring
+* Scaling applications by increasing pod replicas
+* Managing stateful applications with persistent storage
+* Understanding Kubernetes networking and service discovery
+* Deploying a production-style monitoring stack using Prometheus and Grafana
+* Installing and managing **kube-prometheus-stack** using Helm
+* Collecting infrastructure metrics with **Node Exporter**
+* Monitoring Kubernetes resources using **Kube State Metrics**
+* Exposing custom application metrics using the **prom-client** library
+* Configuring **ServiceMonitor** to enable automatic metric scraping by Prometheus
+* Monitoring HTTP request count and request latency using Prometheus Counters and Histograms
+* Writing PromQL queries to analyze application and infrastructure metrics
+* Building Grafana dashboards for real-time visualization of Kubernetes and application metrics
+* Understanding the importance of observability in maintaining reliable and scalable cloud-native applications
+* Applying production-ready deployment and monitoring best practices
 
 ---
 
