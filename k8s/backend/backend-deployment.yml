@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: todo-backend
-          image: vinitparmar03/todo_backend:latest
+          image: vinitparmar03/todo_backend:v2
           imagePullPolicy: Always
           ports:
             - containerPort: 5000
